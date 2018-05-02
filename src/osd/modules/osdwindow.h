@@ -121,7 +121,7 @@ public:
 	virtual void show_pointer() = 0;
 	virtual void hide_pointer() = 0;
 
-	virtual void update() = 0;
+	virtual void update(bool prevent_white_box = false) = 0;
 	virtual void destroy() = 0;
 
 #if defined(OSD_WINDOWS) || defined(OSD_UWP)

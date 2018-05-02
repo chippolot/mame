@@ -58,6 +58,7 @@ public:
 	static int start_frontend(emu_options &options, osd_interface &osd, std::vector<std::string> &args);
 	static int start_frontend(emu_options &options, osd_interface &osd, int argc, char *argv[]);
 	static void draw_user_interface(running_machine& machine);
+	static void draw_lua_user_interface();
 	static void periodic_check();
 	static bool frame_hook();
 	static void layout_file_cb(util::xml::data_node const &layout);

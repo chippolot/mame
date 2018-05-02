@@ -41,6 +41,7 @@ public:
 	void load_string(const char *value);
 
 	bool frame_hook();
+	void draw_user_interface();
 
 	void menu_populate(const std::string &menu, std::vector<std::tuple<std::string, std::string, std::string>> &menu_list);
 	bool menu_callback(const std::string &menu, int index, const std::string &event);

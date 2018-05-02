@@ -250,6 +250,10 @@ public:
 	address_space &dummy_space() const { return m_dummy_space.space(AS_PROGRAM); }
 	void popmessage() const { popmessage(static_cast<char const *>(nullptr)); }
 	template <typename Format, typename... Params> void popmessage(Format &&fmt, Params &&... args) const;
+
+	void popmessage_force() const { popmessage_force(static_cast<char const *>(nullptr)); }
+	template <typename Format, typename... Params> void popmessage_force(Format &&fmt, Params &&... args) const;
+
 	template <typename Format, typename... Params> void logerror(Format &&fmt, Params &&... args) const;
 	void strlog(const char *str) const;
 	u32 rand();
@@ -300,6 +304,7 @@ private:
 	void nvram_save();
 	void popup_clear() const;
 	void popup_message(util::format_argument_pack<std::ostream> const &args) const;
+	void popup_message_force(util::format_argument_pack<std::ostream> const &args) const;
 
 	// internal callbacks
 	void logfile_callback(const char *buffer);
@@ -433,6 +438,17 @@ inline void running_machine::popmessage(Format &&fmt, Params &&... args) const
 		popup_clear();
 	else
 		popup_message(util::make_format_argument_pack(std::forward<Format>(fmt), std::forward<Params>(args)...));
+}
+
+template <typename Format, typename... Params>
+inline void running_machine::popmessage_force(Format &&fmt, Params &&... args) const
+{
+	// if the format is nullptr, it is a signal to clear the popmessage
+	// otherwise, generate the buffer and call the UI to display the message
+	if (is_null<Format>::value(fmt))
+		popup_clear();
+	else
+		popup_message_force(util::make_format_argument_pack(std::forward<Format>(fmt), std::forward<Params>(args)...));
 }
 
 

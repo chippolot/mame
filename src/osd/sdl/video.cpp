@@ -95,8 +95,7 @@ void sdl_osd_interface::video_exit()
 //============================================================
 //  update
 //============================================================
-
-void sdl_osd_interface::update(bool skip_redraw)
+void sdl_osd_interface::update(bool skip_redraw, bool prevent_white_box)
 {
 	osd_common_t::update(skip_redraw);
 
@@ -104,8 +103,9 @@ void sdl_osd_interface::update(bool skip_redraw)
 	if (!skip_redraw)
 	{
 //      profiler_mark(PROFILER_BLIT);
+		//BENCHANGE White Box Fix (from GroovyMAME)
 		for (auto window : osd_common_t::s_window_list)
-			window->update();
+			window->update(prevent_white_box);
 //      profiler_mark(PROFILER_END);
 	}
 

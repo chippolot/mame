@@ -357,6 +357,11 @@ bool emulator_info::frame_hook()
 	return mame_machine_manager::instance()->lua()->frame_hook();
 }
 
+void emulator_info::draw_lua_user_interface()
+{
+	mame_machine_manager::instance()->lua()->draw_user_interface();
+}
+
 void emulator_info::layout_file_cb(util::xml::data_node const &layout)
 {
 	util::xml::data_node const *const mamelayout = layout.get_child("mamelayout");

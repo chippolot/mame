@@ -288,7 +288,7 @@ void mame_ui_manager::display_startup_screens(bool first_time)
 	const int maxstate = 3;
 	int str = machine().options().seconds_to_run();
 	bool show_gameinfo = !machine().options().skip_gameinfo();
-	bool show_warnings = true, show_mandatory_fileman = true;
+	bool show_warnings = !machine().options().skip_warnings(), show_mandatory_fileman = true;
 
 	// disable everything if we are using -str for 300 or fewer seconds, or if we're the empty driver,
 	// or if we are debugging
@@ -310,6 +310,8 @@ void mame_ui_manager::display_startup_screens(bool first_time)
 		messagebox_text.clear();
 
 		// pick the next state
+		// BENCHANGE don't show loading info
+		/*
 		switch (state)
 		{
 		case 0:
@@ -339,6 +341,7 @@ void mame_ui_manager::display_startup_screens(bool first_time)
 			}
 			break;
 		}
+		*/
 
 		// clear the input memory
 		machine().input().reset_polling();
@@ -347,12 +350,12 @@ void mame_ui_manager::display_startup_screens(bool first_time)
 		// loop while we have a handler
 		while (m_handler_callback_type == ui_callback_type::MODAL && !machine().scheduled_event_pending() && !ui::menu::stack_has_special_main_menu(machine()))
 		{
-			machine().video().frame_update();
+			//machine().video().frame_update();
 		}
 
 		// clear the handler and force an update
 		set_handler(ui_callback_type::GENERAL, std::bind(&mame_ui_manager::handler_ingame, this, _1));
-		machine().video().frame_update();
+		//machine().video().frame_update();
 	}
 
 	// if we're the empty driver, force the menus on
@@ -371,15 +374,18 @@ void mame_ui_manager::set_startup_text(const char *text, bool force)
 	static osd_ticks_t lastupdatetime = 0;
 	osd_ticks_t curtime = osd_ticks();
 
+	// BENCHANGE don't wan't to ever draw this!
+	/*
 	// copy in the new text
 	messagebox_text.assign(text);
 	messagebox_backcolor = UI_BACKGROUND_COLOR;
+	*/
 
 	// don't update more than 4 times/second
 	if (force || (curtime - lastupdatetime) > osd_ticks_per_second() / 4)
 	{
 		lastupdatetime = curtime;
-		machine().video().frame_update();
+		machine().video().frame_update(false, true);
 	}
 }
 
@@ -405,6 +411,9 @@ void mame_ui_manager::update_and_render(render_container &container)
 		if (alpha >= 0)
 			container.add_rect(0.0f, 0.0f, 1.0f, 1.0f, rgb_t(alpha,0x00,0x00,0x00), PRIMFLAG_BLENDMODE(BLENDMODE_ALPHA));
 	}
+
+	// invoke lua ui render callback
+	emulator_info::draw_lua_user_interface();
 
 	// render any cheat stuff at the bottom
 	if (machine().phase() >= machine_phase::RESET)
@@ -2111,8 +2120,10 @@ int get_font_rows(running_machine *machine)
 	return ((machine != nullptr) ? value = mame_machine_manager::instance()->ui().options().font_rows() : value);
 }
 
-void mame_ui_manager::popup_time_string(int seconds, std::string message)
+void mame_ui_manager::popup_time_string(int seconds, std::string message, bool force_show)
 {
+	if (!force_show) return;
+	
 	// extract the text
 	messagebox_poptext = message;
 	messagebox_backcolor = UI_BACKGROUND_COLOR;

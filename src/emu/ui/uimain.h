@@ -36,11 +36,12 @@ public:
 	bool show_timecode_counter() const { return m_show_timecode_counter; }
 	bool show_timecode_total() const { return m_show_timecode_total; }
 
-	virtual void popup_time_string(int seconds, std::string message) { }
+	virtual void popup_time_string(int seconds, std::string message, bool force_show = false) { }
 
 	virtual void menu_reset() { }
 
 	template <typename Format, typename... Params> void popup_time(int seconds, Format &&fmt, Params &&... args);
+	template <typename Format, typename... Params> void popup_time_force(int seconds, Format &&fmt, Params &&... args);
 
 protected:
 	// instance variables
@@ -63,6 +64,13 @@ inline void ui_manager::popup_time(int seconds, Format &&fmt, Params &&... args)
 {
 	// extract the text
 	popup_time_string(seconds, string_format(std::forward<Format>(fmt), std::forward<Params>(args)...));
+}
+
+template <typename Format, typename... Params>
+inline void ui_manager::popup_time_force(int seconds, Format &&fmt, Params &&... args)
+{
+	// extract the text
+	popup_time_string(seconds, string_format(std::forward<Format>(fmt), std::forward<Params>(args)...), true);
 }
 
 #endif // MAME_EMU_UI_UIMAIN_H

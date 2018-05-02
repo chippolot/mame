@@ -76,7 +76,8 @@ public:
 	osd_file::error open_next(emu_file &file, const char *extension, uint32_t index = 0);
 
 	// render a frame
-	void frame_update(bool from_debugger = false);
+	// BENCHANGE adding to mimic GroovyMAME
+	void frame_update(bool from_debugger = false, bool prevent_white_box = false);
 
 	// current speed helpers
 	std::string speed_text();

@@ -469,8 +469,8 @@ void uwp_window_info::destroy()
 //  winwindow_video_window_update
 //  (main thread)
 //============================================================
-
-void uwp_window_info::update()
+//BENCHANGE White Box Fix (from GroovyMAME)
+void uwp_window_info::update(bool prevent_white_box)
 {
 	int targetview, targetorient;
 	render_layer_config targetlayerconfig;
@@ -525,7 +525,7 @@ void uwp_window_info::update()
 
 			// Actually perform the redraw
 			m_primlist = primlist;
-			draw_video_contents(FALSE);
+			if (!prevent_white_box) draw_video_contents(FALSE);
 		}
 	}
 }

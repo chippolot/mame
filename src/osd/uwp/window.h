@@ -54,7 +54,8 @@ public:
 	virtual render_target *target() override { return m_target; }
 	int fullscreen() const override { return m_fullscreen; }
 
-	void update() override;
+	//BENCHANGE White Box Fix (from GroovyMAME)
+	void update(bool prevent_white_box = false) override;
 
 	virtual osd_dim get_size() override
 	{

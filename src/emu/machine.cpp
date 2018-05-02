@@ -1201,6 +1201,13 @@ void running_machine::popup_message(util::format_argument_pack<std::ostream> con
 }
 
 
+void running_machine::popup_message_force(util::format_argument_pack<std::ostream> const &args) const
+{
+	std::string const temp(string_format(args));
+	ui().popup_time_force(temp.length() / 40 + 2, "%s", temp);
+}
+
+
 //**************************************************************************
 //  CALLBACK ITEMS
 //**************************************************************************

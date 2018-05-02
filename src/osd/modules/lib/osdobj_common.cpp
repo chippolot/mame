@@ -464,7 +464,8 @@ void osd_common_t::init(running_machine &machine)
 //  update - periodic system update
 //-------------------------------------------------
 
-void osd_common_t::update(bool skip_redraw)
+//BENCHANGE White Box Fix (from GroovyMAME)
+void osd_common_t::update(bool skip_redraw, bool prevent_white_box)
 {
 	//
 	// This method is called periodically to flush video updates to the

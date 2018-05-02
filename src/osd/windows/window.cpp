@@ -833,8 +833,8 @@ void win_window_info::destroy()
 //  winwindow_video_window_update
 //  (main thread)
 //============================================================
-
-void win_window_info::update()
+//BENCHANGE White Box Fix (from GroovyMAME)
+void win_window_info::update(bool prevent_white_box)
 {
 	int targetview, targetorient;
 	render_layer_config targetlayerconfig;
@@ -886,7 +886,7 @@ void win_window_info::update()
 			// post a redraw request with the primitive list as a parameter
 			last_update_time = timeGetTime();
 
-			SendMessage(platform_window(), WM_USER_REDRAW, 0, (LPARAM)primlist);
+			if (!prevent_white_box) SendMessage(platform_window(), WM_USER_REDRAW, 0, (LPARAM)primlist);
 		}
 	}
 }

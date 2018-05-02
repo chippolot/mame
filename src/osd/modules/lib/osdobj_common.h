@@ -188,7 +188,8 @@ public:
 
 	// general overridables
 	virtual void init(running_machine &machine) override;
-	virtual void update(bool skip_redraw) override;
+	//BENCHANGE White Box Fix (from GroovyMAME)
+	virtual void update(bool skip_redraw, bool prevent_white_box = false) override;
 
 	// debugger overridables
 	virtual void init_debugger() override;

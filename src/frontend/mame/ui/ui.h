@@ -193,6 +193,7 @@ public:
 	void save_main_option();
 
 	template <typename Format, typename... Params> void popup_time(int seconds, Format &&fmt, Params &&... args);
+	template <typename Format, typename... Params> void popup_time_force(int seconds, Format &&fmt, Params &&... args);
 	void show_fps_temp(double seconds);
 	void set_show_fps(bool show);
 	bool show_fps() const;
@@ -227,7 +228,7 @@ public:
 
 	// draw an outlined box with given line color and filled with a texture
 	void draw_textured_box(render_container &container, float x0, float y0, float x1, float y1, rgb_t backcolor, rgb_t linecolor, render_texture *texture = nullptr, uint32_t flags = PRIMFLAG_BLENDMODE(BLENDMODE_ALPHA));
-	virtual void popup_time_string(int seconds, std::string message) override;
+	virtual void popup_time_string(int seconds, std::string message, bool force_show = false) override;
 
 	virtual void menu_reset() override;
 
@@ -313,6 +314,13 @@ inline void mame_ui_manager::popup_time(int seconds, Format &&fmt, Params &&... 
 {
 	// extract the text
 	popup_time_string(seconds, string_format(std::forward<Format>(fmt), std::forward<Params>(args)...));
+}
+
+template <typename Format, typename... Params>
+inline void mame_ui_manager::popup_time_force(int seconds, Format &&fmt, Params &&... args)
+{
+	// extract the text
+	popup_time_string(seconds, string_format(std::forward<Format>(fmt), std::forward<Params>(args)...), true);
 }
 
 #endif  /* MAME_FRONTEND_UI_UI_H */

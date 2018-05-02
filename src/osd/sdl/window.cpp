@@ -553,8 +553,8 @@ osd_dim sdl_window_info::pick_best_mode()
 //  sdlwindow_video_window_update
 //  (main thread)
 //============================================================
-
-void sdl_window_info::update()
+//BENCHANGE White Box Fix (from GroovyMAME)
+void sdl_window_info::update(bool prevent_white_box)
 {
 	osd_ticks_t     event_wait_ticks;
 
@@ -562,6 +562,10 @@ void sdl_window_info::update()
 	//sdlwindow_update_cursor_state(machine, window);
 
 	update_cursor_state();
+	if (prevent_white_box)
+	{
+		return;
+	}
 
 	// if we're visible and running and not in the middle of a resize, draw
 	if (m_target != nullptr)

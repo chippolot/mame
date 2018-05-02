@@ -44,8 +44,9 @@ public:
 	~sdl_window_info();
 
 	int window_init();
-
-	void update() override;
+	
+	//BENCHANGE White Box Fix (from GroovyMAME)
+	void update(bool prevent_white_box = false) override;
 	void toggle_full_screen();
 	void modify_prescale(int dir);
 	void resize(int32_t width, int32_t height);

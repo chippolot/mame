@@ -121,7 +121,8 @@ public:
 
 	// general overridables
 	virtual void init(running_machine &machine) override;
-	virtual void update(bool skip_redraw) override;
+	//BENCHANGE White Box Fix (from GroovyMAME)
+	virtual void update(bool skip_redraw, bool prevent_white_box = false) override;
 
 	// input overridables
 	virtual void customize_input_type_list(simple_list<input_type_entry> &typelist) override;

@@ -220,7 +220,7 @@ void video_manager::set_frameskip(int frameskip)
 //  operations
 //-------------------------------------------------
 
-void video_manager::frame_update(bool from_debugger)
+void video_manager::frame_update(bool from_debugger, bool prevent_white_box)
 {
 	// only render sound and video if we're in the running phase
 	machine_phase const phase = machine().phase();
@@ -248,7 +248,8 @@ void video_manager::frame_update(bool from_debugger)
 
 	// ask the OSD to update
 	g_profiler.start(PROFILER_BLIT);
-	machine().osd().update(!from_debugger && skipped_it);
+	//BENCHANGE White Box Fix (from GroovyMAME)
+	machine().osd().update(!from_debugger && skipped_it, prevent_white_box);
 	g_profiler.stop();
 
 	emulator_info::periodic_check();

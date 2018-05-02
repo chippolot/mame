@@ -733,6 +733,7 @@ void lua_engine::initialize()
  * emu.register_resume(callback) - callback at resume
  * emu.register_frame(callback) - callback at end of frame
  * emu.register_frame_done(callback) - callback after frame is drawn to screen (for overlays)
+ * emu.register_ui(callback) - callback before ui renders (for rendering to ui render container)
  * emu.register_periodic(callback) - periodic callback while program is running
  * emu.register_menu(event_callback, populate_callback, name) - callbacks for plugin menu
  * emu.print_verbose(str) -- output to stderr at verbose level
@@ -746,6 +747,7 @@ void lua_engine::initialize()
 	sol::table emu = sol().create_named_table("emu");
 	emu["app_name"] = &emulator_info::get_appname_lower;
 	emu["app_version"] = &emulator_info::get_bare_build_version;
+	emu["app_time"] = [](){ return static_cast<double>(osd_ticks())/osd_ticks_per_second(); };
 	emu["gamename"] = [this](){ return machine().system().type.fullname(); };
 	emu["romname"] = [this](){ return machine().basename(); };
 	emu["softname"] = [this]() { return machine().options().software_name(); };
@@ -769,6 +771,7 @@ void lua_engine::initialize()
 	emu["register_resume"] = [this](sol::function func){ register_function(func, "LUA_ON_RESUME"); };
 	emu["register_frame"] = [this](sol::function func){ register_function(func, "LUA_ON_FRAME"); };
 	emu["register_frame_done"] = [this](sol::function func){ register_function(func, "LUA_ON_FRAME_DONE"); };
+	emu["register_ui"] = [this](sol::function func){ register_function(func, "LUA_ON_UI"); };
 	emu["register_periodic"] = [this](sol::function func){ register_function(func, "LUA_ON_PERIODIC"); };
 	emu["register_menu"] = [this](sol::function cb, sol::function pop, const std::string &name) {
 			std::string cbfield = "menu_cb_" + name;
@@ -1201,8 +1204,8 @@ void lua_engine::initialize()
 					}
 					return image_table;
 				}),
-			"popmessage", sol::overload([](running_machine &m, const char *str) { m.popmessage("%s", str); },
-					[](running_machine &m) { m.popmessage(); }),
+			"popmessage", sol::overload([](running_machine &m, const char *str) { m.popmessage_force("%s", str); },
+					[](running_machine &m) { m.popmessage_force(); }),
 			"logerror", [](running_machine &m, const char *str) { m.logerror("[luaengine] %s\n", str); } );
 
 /* game_driver - this should be self explanatory
@@ -1515,6 +1518,7 @@ void lua_engine::initialize()
 
 	sol().registry().new_usertype<ioport_field>("ioport_field", "new", sol::no_constructor,
 			"set_value", &ioport_field::set_value,
+			"digital_value", &ioport_field::digital_value,
 			"device", sol::property(&ioport_field::device),
 			"name", sol::property(&ioport_field::name),
 			"default_name", sol::property([](ioport_field &f) {
@@ -1690,7 +1694,65 @@ void lua_engine::initialize()
 			"yscale", &render_container::yscale,
 			"xoffset", &render_container::xoffset,
 			"yoffset", &render_container::yoffset,
-			"is_empty", &render_container::is_empty);
+			"is_empty", &render_container::is_empty,
+			"draw_box", [](render_container &container, float x1, float y1, float x2, float y2, uint32_t bgcolor, uint32_t fgcolor) {
+					auto& mui = mame_machine_manager::instance()->ui();
+					render_target& rt = mui.machine().render().ui_target();
+					int c_width = rt.width();
+					int c_height = rt.height();
+					x1 = std::min(std::max(0.0f, x1), float(c_width-1)) / float(c_width);
+					y1 = std::min(std::max(0.0f, y1), float(c_height-1)) / float(c_height);
+					x2 = std::min(std::max(0.0f, x2), float(c_width-1)) / float(c_width);
+					y2 = std::min(std::max(0.0f, y2), float(c_height-1)) / float(c_height);
+					mame_machine_manager::instance()->ui().draw_outlined_box(container, x1, y1, x2, y2, fgcolor, bgcolor);
+				},
+			"draw_line", [](render_container &container, float x1, float y1, float x2, float y2, uint32_t color) {
+					auto& mui = mame_machine_manager::instance()->ui();
+					render_target& rt = mui.machine().render().ui_target();
+					int c_width = rt.width();
+					int c_height = rt.height();
+					x1 = std::min(std::max(0.0f, x1), float(c_width-1)) / float(c_width);
+					y1 = std::min(std::max(0.0f, y1), float(c_height-1)) / float(c_height);
+					x2 = std::min(std::max(0.0f, x2), float(c_width-1)) / float(c_width);
+					y2 = std::min(std::max(0.0f, y2), float(c_height-1)) / float(c_height);
+					container.add_line(x1, y1, x2, y2, UI_LINE_WIDTH, rgb_t(color), PRIMFLAG_BLENDMODE(BLENDMODE_ALPHA));
+				},
+			"draw_text", [this](render_container &container, sol::object xobj, float y, const char *msg, sol::object color, sol::object size) {
+					auto& mui = mame_machine_manager::instance()->ui();
+					render_target& rt = mui.machine().render().ui_target();
+					int c_width = rt.width();
+					int c_height = rt.height();
+					auto justify = ui::text_layout::LEFT;
+					float x = 0;
+					if(xobj.is<float>())
+					{
+						x = std::min(std::max(0.0f, xobj.as<float>()), float(c_width-1)) / float(c_width);
+						y = std::min(std::max(0.0f, y), float(c_height-1)) / float(c_height);
+					}
+					else if(xobj.is<const char *>())
+					{
+						std::string just_str = xobj.as<const char *>();
+						if(just_str == "right")
+							justify = ui::text_layout::RIGHT;
+						else if(just_str == "center")
+							justify = ui::text_layout::CENTER;
+					}
+					else
+					{
+						luaL_error(m_lua_state, "Error in param 1 to draw_text");
+						return;
+					}
+					rgb_t textcolor = UI_TEXT_COLOR;
+					rgb_t bgcolor = UI_TEXT_BG_COLOR;
+					if(color.is<uint32_t>())
+						textcolor = rgb_t(color.as<uint32_t>());
+					float textsize = 1.0f;
+					if (size.is<float>())
+						textsize = size.as<float>();
+					mui.draw_text_full(container, msg, x, y, (1.0f - x),
+										justify, ui::text_layout::WORD, mame_ui_manager::NORMAL, textcolor,
+										bgcolor, nullptr, nullptr, textsize);
+				});
 
 /* machine:render()
  * render:max_update_rate() -
@@ -1748,7 +1810,7 @@ void lua_engine::initialize()
 					y2 = std::min(std::max(0.0f, y2), float(sc_height-1)) / float(sc_height);
 					sdev.container().add_line(x1, y1, x2, y2, UI_LINE_WIDTH, rgb_t(color), PRIMFLAG_BLENDMODE(BLENDMODE_ALPHA));
 				},
-			"draw_text", [this](screen_device &sdev, sol::object xobj, float y, const char *msg, sol::object color) {
+			"draw_text", [this](screen_device &sdev, sol::object xobj, float y, const char *msg, sol::object color, sol::object size) {
 					int sc_width = sdev.visible_area().width();
 					int sc_height = sdev.visible_area().height();
 					auto justify = ui::text_layout::LEFT;
@@ -1775,9 +1837,12 @@ void lua_engine::initialize()
 					rgb_t bgcolor = UI_TEXT_BG_COLOR;
 					if(color.is<uint32_t>())
 						textcolor = rgb_t(color.as<uint32_t>());
+					float textsize = 1.0f;
+					if (size.is<float>())
+						textsize = size.as<float>();
 					mame_machine_manager::instance()->ui().draw_text_full(sdev.container(), msg, x, y, (1.0f - x),
 										justify, ui::text_layout::WORD, mame_ui_manager::NORMAL, textcolor,
-										bgcolor, nullptr, nullptr);
+										bgcolor, nullptr, nullptr, textsize);
 				},
 			"height", [](screen_device &sdev) { return sdev.visible_area().height(); },
 			"width", [](screen_device &sdev) { return sdev.visible_area().width(); },
@@ -2006,6 +2071,11 @@ void lua_engine::initialize()
 bool lua_engine::frame_hook()
 {
 	return execute_function("LUA_ON_FRAME_DONE");
+}
+
+void lua_engine::draw_user_interface()
+{
+	execute_function("LUA_ON_UI");
 }
 
 //-------------------------------------------------
